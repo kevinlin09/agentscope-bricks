@@ -89,6 +89,7 @@ class FilmClient:
         )
 
         try:
+            # Use session-level timeout configuration
             async with session.post(self.endpoint, json=payload) as response:
                 if response.status != 200:
                     logger.error(
@@ -166,7 +167,24 @@ class FilmClient:
         logger.info(f"Session ID: {self.session_id}")
         logger.info(f"Endpoint: {self.endpoint}")
 
-        async with aiohttp.ClientSession() as session:
+        # Configure session with comprehensive timeout and connection settings
+        connector = aiohttp.TCPConnector(
+            limit=10,  # Maximum number of connections
+            limit_per_host=5,  # Maximum connections per host
+            keepalive_timeout=300,  # Keep connections alive for 5 minutes
+        )
+
+        # Unified timeout configuration for all requests in this session
+        session_timeout = aiohttp.ClientTimeout(
+            total=600,  # 10 minutes total timeout per request
+            connect=30,  # 30 seconds connection timeout
+            sock_read=60,  # 1 minute read timeout per chunk
+        )
+
+        async with aiohttp.ClientSession(
+            connector=connector,
+            timeout=session_timeout,
+        ) as session:
             for i, stage in enumerate(STAGE_ORDER):
                 logger.info(
                     f"Processing stage {i + 1}/{len(STAGE_ORDER)}: {stage}",
@@ -182,7 +200,10 @@ class FilmClient:
                     return False
 
                 # Add a small delay between requests
-                await asyncio.sleep(1)
+                logger.info(
+                    f"Stage {stage} completed, waiting before next request...",
+                )
+                await asyncio.sleep(2)
 
         logger.info("=== All stages completed successfully! ===")
         return True

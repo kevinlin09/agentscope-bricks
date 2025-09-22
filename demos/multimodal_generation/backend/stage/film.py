@@ -365,7 +365,6 @@ class FilmHandler(Handler):
             role=Role.ASSISTANT,
             content=[],
         )
-        yield assistant_message
 
         # Extract video URLs from video message
         video_urls = []
